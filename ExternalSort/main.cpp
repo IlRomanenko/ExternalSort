@@ -3,12 +3,8 @@
 #include "Serializer.h"
 #include <sstream>
 
-string toInt(int value)
-{
-	stringstream ss;
-	ss << value;
-	return ss.str();
-}
+
+#define fori(i, n) for(int i = 0; i < (int)(n); i++)
 
 template <typename T> void print(T x)
 {
@@ -39,13 +35,22 @@ public:
 		fori(i, 10)
 			p.push_back(i);
 	}
-	A(int _p) 
+	A(int _p, int _d) 
 	{
-		fori(i, 6)
-			p.push_back(i);
+		fori(i, _p)
+			p.push_back(_d * 12);
 		p.push_back(_p);
 	}
 };
+
+ostream& operator<<(ostream &stream, A& obj)
+{
+	stream << "A" << endl;
+	for (int val : obj.p)
+		stream << val << ' ' ;
+	stream << endl;
+	return stream;
+}
 
 int main()
 {
@@ -53,6 +58,7 @@ int main()
 		FileStorage storage("temp.txt", "", true, false);
 		int arr[] = {9, 8, 5, 4};
 		Serializer::Serialize(storage, arr);
+		
 		int *f = new int[8];
 		fori(i, 8)
 			f[i] = i * (-15);
@@ -63,12 +69,21 @@ int main()
 		
 		string s = "abacaba";
 		Serializer::Serialize(storage, s);
+
+		//Something strange...
+		A **arA = new A*[10];
+		fori(i, 10)
+			arA[i] = new A(i, i);
+		Serializer::Serialize(storage, arA, 10);
 	}
 	{
 		FileStorage storage("temp.txt", "", true, true);
+		
 		int arr[4];
 		Serializer::Deserialize(storage, arr);
 		print(arr);
+		
+		
 		int *f = nullptr;
 		uint count = Serializer::Deserialize(storage, f);
 		print(f, count);
@@ -79,8 +94,13 @@ int main()
 		
 		string t;
 		Serializer::Deserialize(storage, t);
-
 		print(t);
+
+		//WaT?! Why is it working?
+		A **arA = nullptr;
+		Serializer::Deserialize(storage, arA);
+		fori(i, 10)
+			print(*arA[i]);
 	}
 	system("pause");
 	return 0;
