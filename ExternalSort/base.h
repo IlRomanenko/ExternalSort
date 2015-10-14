@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 typedef size_t uint;
 

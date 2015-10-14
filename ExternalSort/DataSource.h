@@ -1,3 +1,4 @@
+#pragma once
 #include "base.h"
 #include "IDataSource.h"
 #include "IFileStorage.h"
@@ -5,49 +6,49 @@
 template <typename T> class StorageInData : public IDataSource<T>
 {
 private:
-	IFormatedFileStorage &file;
+	IFormatedFileStorage *file;
 public:
-	StorageInData(IFormatedFileStorage &storage)
+	StorageInData<T>(IFormatedFileStorage &storage)
 	{
-		file = storage;
+		file = &storage;
 	}
 	
 	T getNext()
 	{
 		assert(isEmpty());
-		T data = default(T);
-		file >> data;
+		T data;
+		(*file) >> data;
 		return data;
 	}
 
 	bool isEmpty()
 	{
-		return file.isEmpty();
+		return file->isEmpty();
 	}
 
-	~StorageInData()
+	~StorageInData<T>()
 	{
-		file.close();
+		file->close();
 	}
 };
 
 template <typename T> class StorageOutData : public IDataOutSource <T>
 {
 private:
-	IFormatedFileStorage &file;
+	IFormatedFileStorage *file;
 public:
-	StorageOutData(IFormatedFileStorage &storage)
+	StorageOutData<T>(IFormatedFileStorage &storage)
 	{
-		file = storage;
+		file = &storage;
 	}
 
 	void putNext(const T &data)
 	{
-		file << data << ' ';
+		(*file) << data << ' ';
 	}
 
-	~StorageOutData()
+	~StorageOutData<T>()
 	{
-		file.close();
+		file->close();
 	}
 };

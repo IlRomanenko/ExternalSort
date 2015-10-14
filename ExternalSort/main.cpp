@@ -1,8 +1,8 @@
 #include "base.h"
 #include "FileStorage.h"
 #include "Serializer.h"
-#include <sstream>
-#include "ExternalSort.h"
+#include "ExternalReverse.h"
+#include "DataSource.h"
 
 #define fori(i, n) for(int i = 0; i < (int)(n); i++)
 
@@ -18,7 +18,6 @@ template <typename T> void print(vector<T> v)
 		cout << v[i] << ' ';
 	cout << endl;
 }
-
 template <typename T> void print(T *x, int k)
 {
 	cout << "template <typename T> void print(T *x, int k)" << endl;
@@ -33,36 +32,8 @@ template <typename T, size_t N> void print(T (&x)[N])
 		cout << x[i] << ' ';
 	cout << endl;
 }
-
-class A
+void test()
 {
-public:
-	vector<int> p;
-	A()
-	{
-		fori(i, 10)
-			p.push_back(i);
-	}
-	A(int _p, int _d) 
-	{
-		fori(i, _p)
-			p.push_back(_d * 12);
-		p.push_back(_p);
-	}
-};
-
-ostream& operator<<(ostream &stream, A& obj)
-{
-	stream << "A" << endl;
-	for (int val : obj.p)
-		stream << val << ' ' ;
-	stream << endl;
-	return stream;
-}
-
-int main()
-{
-	
 	{
 		FileStorage storage("temp.txt", "", IFile::Write);
 		int arr[] = {9, 8, 5, 4, 12};
@@ -131,10 +102,35 @@ int main()
 		Serializer::Deserialize(storage, st);
 		print(st);
 	}
+}
 
+template <typename T> class A
+{
+	IDataOutSource<T> *p;
+public:
+	A(IDataOutSource<T> &f)
 	{
-
+		p = &f;
 	}
+	void doWork(T data)
+	{
+		p->putNext(data);
+	}
+};
+
+int main()
+{
+	test();
+	StorageOutData<int> st(FormatedFileStorage("out_big_file.txt", "", IFile::Write));
+
+	A<int> c(StorageOutData<int>(FormatedFileStorage("out_big_file.txt", "", IFile::Write)));
+	c.doWork(2);
+	ExternalReverse<int> algorithm(
+		StorageInData<int>(FormatedFileStorage("big_file.txt", "", IFile::Read)), 
+		StorageOutData<int>(FormatedFileStorage("out_big_file.txt", "", IFile::Write)),
+		"",
+		65536);
+	algorithm.externalWork();
 	system("pause");
 	return 0;
 }

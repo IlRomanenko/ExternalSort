@@ -63,14 +63,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="base.h" />
-    <ClInclude Include="ExternalSort.h" />
+    <ClInclude Include="DataSource.h" />
+    <ClInclude Include="ExternalReverse.h" />
+    <ClInclude Include="IExternalAlgorithm.h" />
     <ClInclude Include="FileStorage.h" />
     <ClInclude Include="IFileStorage.h" />
     <ClInclude Include="IDataSource.h" />
     <ClInclude Include="Serializer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DataSource.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
