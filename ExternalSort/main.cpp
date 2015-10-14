@@ -104,33 +104,17 @@ void test()
 	}
 }
 
-template <typename T> class A
-{
-	IDataOutSource<T> *p;
-public:
-	A(IDataOutSource<T> &f)
-	{
-		p = &f;
-	}
-	void doWork(T data)
-	{
-		p->putNext(data);
-	}
-};
-
 int main()
 {
-	test();
-	StorageOutData<int> st(FormatedFileStorage("out_big_file.txt", "", IFile::Write));
+	//test();
 
-	A<int> c(StorageOutData<int>(FormatedFileStorage("out_big_file.txt", "", IFile::Write)));
-	c.doWork(2);
-	ExternalReverse<int> algorithm(
-		StorageInData<int>(FormatedFileStorage("big_file.txt", "", IFile::Read)), 
-		StorageOutData<int>(FormatedFileStorage("out_big_file.txt", "", IFile::Write)),
+	ExternalReverse<double> algorithm(
+		new StorageInData<double>(new FormatedFileStorage("big_file.txt", "", IFile::Read)), 
+		new StorageOutData<double>(new FormatedFileStorage("out_big_file.txt", "", IFile::Write)),
 		"",
-		65536);
+		2);
 	algorithm.externalWork();
+
 	system("pause");
 	return 0;
 }
