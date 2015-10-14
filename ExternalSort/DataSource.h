@@ -6,16 +6,15 @@
 template <typename T> class StorageInData : public IDataSource<T>
 {
 private:
-	IFormatedFileStorage *file;
+	unique_ptr<IFormatedFileStorage> file;
 public:
-	StorageInData<T>(IFormatedFileStorage &storage)
+	StorageInData(IFormatedFileStorage *storage)
 	{
-		file = &storage;
+		file = unique_ptr<IFormatedFileStorage>(storage);
 	}
 	
 	T getNext()
 	{
-		assert(isEmpty());
 		T data;
 		(*file) >> data;
 		return data;
@@ -26,7 +25,7 @@ public:
 		return file->isEmpty();
 	}
 
-	~StorageInData<T>()
+	~StorageInData()
 	{
 		file->close();
 	}
@@ -35,11 +34,11 @@ public:
 template <typename T> class StorageOutData : public IDataOutSource <T>
 {
 private:
-	IFormatedFileStorage *file;
+	unique_ptr<IFormatedFileStorage> file;
 public:
-	StorageOutData<T>(IFormatedFileStorage &storage)
+	StorageOutData(IFormatedFileStorage *storage)
 	{
-		file = &storage;
+		file = unique_ptr<IFormatedFileStorage>(storage);
 	}
 
 	void putNext(const T &data)
@@ -47,7 +46,7 @@ public:
 		(*file) << data << ' ';
 	}
 
-	~StorageOutData<T>()
+	~StorageOutData()
 	{
 		file->close();
 	}

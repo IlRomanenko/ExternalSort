@@ -26,12 +26,6 @@ public:
 		return;
 	}
 
-	void reopen()
-	{
-		file.close();
-		file.open(file_name, ios_base::in | ios_base::binary);
-	}
-
 	~FileStorage()
 	{
 		file.flush();

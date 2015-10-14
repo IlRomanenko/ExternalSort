@@ -2,7 +2,6 @@
 #include "base.h"
 #include "IDataSource.h"
 #include "FileStorage.h"
-#include <memory>
 
 template <typename StorageType> class IExternalAlgorithm
 {
@@ -10,22 +9,22 @@ protected:
 
 	//Virtual functions
 	virtual void beforeWrite(uint chunk_size) = 0;
-	virtual bool choosePart(StorageType &outData) = 0;
-
+	virtual bool chooseElement(StorageType &outData) = 0;
+	virtual void addedChunk(uint chunk_size) { }
 
 	//Base data
-	IDataSource<StorageType> *dataSource;
-	IDataOutSource<StorageType> *dataOutSource;
+	unique_ptr<IDataSource<StorageType> > dataSource;
+	unique_ptr<IDataOutSource<StorageType> > dataOutSource;
 	string directoryName;
 	uint blockSize;
-	vector<IFileStorage*> storages;
-	vector<uint> chunkSizes;
+	vector<unique_ptr<IFileStorage> > storages;
+	vector<uint> chunksSizes;
 	StorageType* chunk;
 
 	//Base functions
-	FileStorage* writeChunkToDisk(uint chunk_size)
+	unique_ptr<FileStorage> writeChunkToDisk(uint chunk_size)
 	{
-		FileStorage *storage = new FileStorage(toString(storages.size())+".tmp", directoryName, IFile::file_mode::Write);
+		unique_ptr<FileStorage> storage(new FileStorage(toString(storages.size())+".tmp", directoryName, IFile::file_mode::Write));
 		Serializer::SerializeRawData(*storage, chunk, chunk_size);
 		return storage;
 	}
@@ -41,7 +40,7 @@ protected:
 		return current;
 	}
 
-	void prepare()
+	void prepareChunks()
 	{
 		uint chunk_size = 0;
 		while (!dataSource->isEmpty())
@@ -49,57 +48,54 @@ protected:
 			chunk[chunk_size++] = dataSource->getNext();
 			if (chunk_size >= blockSize)
 			{
-				chunkSizes.push_back(chunk_size);
+				chunksSizes.push_back(chunk_size);
 				beforeWrite(chunk_size);
 				storages.push_back(writeChunkToDisk(chunk_size));
+				addedChunk(chunk_size);
 				chunk_size = 0;
 			}
 		}
 		if (chunk_size != 0)
 		{
-			chunkSizes.push_back(chunk_size);
+			chunksSizes.push_back(chunk_size);
 			beforeWrite(chunk_size);
 			storages.push_back(writeChunkToDisk(chunk_size));
+			addedChunk(chunk_size);
 		}
+		for (uint i = 0; i < storages.size(); i++)
+			storages[i]->reopen(IFile::file_mode::Read);
 	}
 	
 	void mergeChunks()
 	{
 		StorageType data;
-		while (choosePart(data))
+		while (chooseElement(data))
 		{
 			dataOutSource->putNext(data);
 		}
 	}
 
 public:
-	IExternalAlgorithm()
-	{
-		dataSource = nullptr;
-		dataOutSource = nullptr;
-		chunk = nullptr;
-	}
-
-	IExternalAlgorithm(IDataSource<StorageType> &_dataSource, IDataOutSource<StorageType> &_dataOutSource, string _directoryName, uint _blockSize) :
+	IExternalAlgorithm(	IDataSource<StorageType> *_dataSource, IDataOutSource<StorageType> *_dataOutSource,
+						string _directoryName, uint _blockSize) :
 		directoryName(_directoryName), blockSize(_blockSize) 
 	{
-		dataSource = &_dataSource;
-		dataOutSource = &_dataOutSource;
+		dataSource = unique_ptr<IDataSource<StorageType> >(_dataSource);
+		dataOutSource = unique_ptr<IDataOutSource<StorageType> >(_dataOutSource);
 		chunk = new StorageType[blockSize];
 	}	
 
 	void externalWork()
 	{
-		prepare();
+		prepareChunks();
 		mergeChunks();
 	}
 
-	~IExternalAlgorithm<StorageType>() 
+	~IExternalAlgorithm() 
 	{
 		for (uint i = 0; i < storages.size(); i++)
 		{
-			storages[i]->~IFileStorage();
-			delete storages[i];
+			storages[i]->remove();
 		}
 		delete chunk;
 	}

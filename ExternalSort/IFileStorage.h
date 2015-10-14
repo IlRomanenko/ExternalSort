@@ -11,6 +11,13 @@ protected:
 public:
 	enum file_mode { Read = ios_base::in, Write = ios_base::out, ReadWrite = ios_base::in | ios_base::out };
 
+	virtual void reopen(file_mode mode)
+	{
+		close();
+		openmode = mode;
+		file.open(file_name, openmode);
+	}
+
 	virtual bool isEmpty()
 	{
 		return file.eof();
