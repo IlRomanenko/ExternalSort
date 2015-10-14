@@ -6,6 +6,13 @@
 #include <iostream>
 #include <fstream>
 
-typedef unsigned int uint;
+typedef size_t uint;
 
 using namespace std;
+
+template <typename T> string toString(const T &obj)
+{
+	stringstream ss;
+	ss << obj;
+	return ss.str();
+}

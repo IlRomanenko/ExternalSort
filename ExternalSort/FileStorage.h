@@ -1,25 +1,17 @@
 #pragma once
 #include "base.h"
-
-class IFileStorage
-{
-public:
-	virtual void write(const void *data, uint size) = 0;
-	virtual void read(void *data, uint size) = 0;
-};
+#include "IFileStorage.h"
 
 class FileStorage : public IFileStorage
 {
-private:
-	fstream file;
-	string file_name;
 public:
-	FileStorage(string name, string directory, bool binary = false, bool is_input = false)
+	FileStorage(string name, string directory, file_mode mode)
 	{
-		file_name = name;
-		file.open(name, (is_input ? ios_base::in : 0) | (is_input ? 0 : ios_base::out) | (binary ? ios_base::binary : 0));
+		openmode = mode;
+		file_name = directory + name;
+		file.open(name, openmode);
 	}
-	
+
 	void write(const void* data, uint size)
 	{
 		const char *str = (char*)data;
@@ -33,14 +25,31 @@ public:
 		file.read(stream, size);
 		return;
 	}
-	
-	void remove()
+
+	void reopen()
 	{
 		file.close();
-		std::remove(file_name.c_str());
+		file.open(file_name, ios_base::in | ios_base::binary);
 	}
 
 	~FileStorage()
+	{
+		file.flush();
+		file.close();
+	}
+};
+
+class FormatedFileStorage : public IFormatedFileStorage
+{
+public:
+	FormatedFileStorage(string name, string directory, file_mode mode)
+	{
+		openmode = mode;
+		file_name = directory + name;
+		file.open(name, openmode);
+	}
+
+	~FormatedFileStorage()
 	{
 		file.flush();
 		file.close();

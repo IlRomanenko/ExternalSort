@@ -4,10 +4,14 @@
 #include <typeinfo>
 #include <typeindex>
 
-//Only for simple types such as int([], *, &), double, vector<simple type>, string etc.
 class Serializer
 {
 public:
+
+	//BinarySerialization only for simple types such as int([], *, &), double, vector<simple type>, string etc.
+
+	#pragma region BinarySerilization
+
 	static
 		void Serialize(IFileStorage &file, const string &str)
 	{
@@ -31,20 +35,33 @@ public:
 	}
 
 	template <typename T> static
+		void SerializeRawData(IFileStorage &file, const T *data, int count)
+	{
+		uint element_size = sizeof(T);
+		file.write(data, count * element_size);
+	}
+
+	template <typename T> static
+		void SerializeRawData(IFileStorage &file, const T data)
+	{
+		uint element_size = sizeof(T);
+		file.write(&data, element_size);
+	}
+
+	template <typename T> static
 		void Serialize(IFileStorage &file, const T *data, int count)
 	{
 		uint element_size = sizeof(T);
 		uint size = count;
 		file.write(&size, sizeof(uint));
-		for (uint i = 0; i < size; i++)
-			file.write(&data[i], element_size);
+		file.write(data, size * element_size);
 	}
 
 	template <typename T> static
 		void Serialize(IFileStorage &file, const T data)
 	{
-		const T *ptr = &data;
-		Serialize(file, ptr, 1);
+		uint size = sizeof(T);
+		file.write(&data, size);
 	}
 
 	static
@@ -74,11 +91,17 @@ public:
 		file.read(&size, sizeof(uint));
 		if (data == nullptr)
 			data = new T[size];
-		for (uint i = 0; i < size; i++)
-			file.read(&data[i], element_size);
+		file.read(data, element_size * size);
 		return size;
 	}
 	
+	template <typename T> static
+		void DeserializeRawData(IFileStorage &file, const T *data, int count)
+	{
+		uint element_size = sizeof(T);
+		file.read(data, count * element_size);
+	}
+
 	
 	template <typename T, size_t N> static
 		uint Deserialize(IFileStorage &file, T (&data)[N])
@@ -90,18 +113,92 @@ public:
 			delete ptr;
 			throw exception();
 		}
-		for (uint i = 0; i < count; i++)
-			data[i] = *(ptr + i);
+		memcpy(data, ptr, count * sizeof(T));
 		delete ptr;
 		return count;
 	}
 	
 	template <typename T> static
+		void DeserializeRawData(IFileStorage &file, T &data)
+	{
+		uint element_size = sizeof(T);
+		file.read(&data, element_size);
+	}
+
+	template <typename T> static
 		void Deserialize(IFileStorage &file, T &data)
 	{
-		T* ptr = nullptr;
-		Deserialize(file, ptr);
-		data = *ptr;
-		delete ptr;
+		DeserializeRawData(file, data);
 	}
+	
+	#pragma endregion
+
+
+
+	//FormatedSerialization for custom types
+
+	#pragma region FormatedSerilization
+
+	template <typename T> static
+		void Serialize(IFormatedFileStorage &storage, const T data)
+	{
+		storage << data << ' ';
+	}
+
+	template <typename T> static
+		void Serialize(IFormatedFileStorage &storage, const T *data)
+	{
+		storage << *data << ' ';
+	}
+
+	static
+		void Serialize(IFormatedFileStorage &storage, const string &str)
+	{
+		storage << str.size() << ' ' << str << ' ';
+	}
+
+	template <typename T> static
+		void Serialize(IFormatedFileStorage &storage, const vector<T> &vect)
+	{
+		storage << vect.size() << ' ';
+		for (T value : vect)
+			storage << value << ' ';
+	}
+
+	template <typename T> static
+		void Deserialize(IFormatedFileStorage &storage, T &data)
+	{
+		storage >> data;
+	}
+
+	template <typename T> static
+		void Deserialize(IFormatedFileStorage &storage, T *&data)
+	{
+		if (data == nullptr)
+			data = new T;
+		storage >> *data;
+	}
+
+	template <> static
+		void Deserialize(IFormatedFileStorage &storage, string &str)
+	{
+		uint size = 0;
+		storage >> size;
+		str.resize(size, '~');
+		for (uint i = 0; i < size; i++)
+		{
+			storage >> str[i];
+		}
+	}
+
+	template <typename T> static
+		void Deserialize(IFormatedFileStorage &storage, vector<T> &vect)
+	{
+		uint size = 0;
+		storage >> size;
+		vect.resize(size, T());
+		for (uint i = 0; i < size; i++)
+			storage >> vect[i];
+	}
+	#pragma endregion
 };

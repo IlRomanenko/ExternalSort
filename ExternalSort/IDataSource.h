@@ -8,3 +8,10 @@ public:
 	virtual bool isEmpty() = 0;
 	virtual ~IDataSource() = 0;
 };
+
+template <typename T> class IDataOutSource
+{
+public:
+	virtual T putNext(const T &data) = 0;
+	virtual ~IDataOutSource() = 0;
+};

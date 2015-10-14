@@ -2,7 +2,7 @@
 #include "FileStorage.h"
 #include "Serializer.h"
 #include <sstream>
-
+#include "ExternalSort.h"
 
 #define fori(i, n) for(int i = 0; i < (int)(n); i++)
 
@@ -11,6 +11,14 @@ template <typename T> void print(T x)
 	cout << "template <typename T> void print(T x)" << endl;
 	cout << x << endl;
 }
+template <typename T> void print(vector<T> v)
+{
+	cout << "template <typename T> void print(vector<T> v)" << endl;
+	fori(i, v.size())
+		cout << v[i] << ' ';
+	cout << endl;
+}
+
 template <typename T> void print(T *x, int k)
 {
 	cout << "template <typename T> void print(T *x, int k)" << endl;
@@ -54,9 +62,10 @@ ostream& operator<<(ostream &stream, A& obj)
 
 int main()
 {
+	
 	{
-		FileStorage storage("temp.txt", "", true, false);
-		int arr[] = {9, 8, 5, 4};
+		FileStorage storage("temp.txt", "", IFile::Write);
+		int arr[] = {9, 8, 5, 4, 12};
 		Serializer::Serialize(storage, arr);
 		
 		int *f = new int[8];
@@ -69,17 +78,11 @@ int main()
 		
 		string s = "abacaba";
 		Serializer::Serialize(storage, s);
-
-		//Something strange...
-		A **arA = new A*[10];
-		fori(i, 10)
-			arA[i] = new A(i, i);
-		Serializer::Serialize(storage, arA, 10);
 	}
 	{
-		FileStorage storage("temp.txt", "", true, true);
+		FileStorage storage("temp.txt", "", IFile::Read);
 		
-		int arr[4];
+		int arr[5];
 		Serializer::Deserialize(storage, arr);
 		print(arr);
 		
@@ -95,12 +98,42 @@ int main()
 		string t;
 		Serializer::Deserialize(storage, t);
 		print(t);
+	}
+	{
+		FormatedFileStorage storage("FormatedFileStorage.txt", "", IFile::Write);
+		fori (i, 10)
+			Serializer::Serialize(storage, i);
 
-		//WaT?! Why is it working?
-		A **arA = nullptr;
-		Serializer::Deserialize(storage, arA);
-		fori(i, 10)
-			print(*arA[i]);
+		vector<double> v;
+		fori(i, 7)
+			v.push_back(rand() + (rand() / (double)RAND_MAX));
+		Serializer::Serialize(storage, v);
+
+		string s = "abacaba";
+
+		Serializer::Serialize(storage, s);
+	}
+	{
+		print('\n');
+		FormatedFileStorage storage("FormatedFileStorage.txt", "", IFile::Read);
+		int f;
+		fori (i, 10)
+		{
+			Serializer::Deserialize(storage, f);
+			print(f);
+		}
+
+		vector<double> vt;
+		Serializer::Deserialize(storage, vt);
+		print(vt);
+
+		string st = "";
+		Serializer::Deserialize(storage, st);
+		print(st);
+	}
+
+	{
+
 	}
 	system("pause");
 	return 0;

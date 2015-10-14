@@ -63,7 +63,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="base.h" />
+    <ClInclude Include="ExternalSort.h" />
     <ClInclude Include="FileStorage.h" />
+    <ClInclude Include="IFileStorage.h" />
     <ClInclude Include="IDataSource.h" />
     <ClInclude Include="Serializer.h" />
   </ItemGroup>

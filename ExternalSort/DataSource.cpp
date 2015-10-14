@@ -1,32 +1,53 @@
 #include "base.h"
 #include "IDataSource.h"
+#include "IFileStorage.h"
 
-template <typename T> class VectorData : IDataSource<T>
+template <typename T> class StorageInData : public IDataSource<T>
 {
 private:
-	iterator<forward_iterator_tag, T> current, last;
+	IFormatedFileStorage &file;
 public:
-	VectorData(iterator<forward_iterator_tag, T> begin, iterator<forward_iterator_tag, T> end)
+	StorageInData(IFormatedFileStorage &storage)
 	{
-		current = begin;
-		last = end;
-		destructor_func = destructor;
+		file = storage;
 	}
 	
 	T getNext()
 	{
-		assert(current == last);
-		T data = *current;
-		current++;
+		assert(isEmpty());
+		T data = default(T);
+		file >> data;
 		return data;
 	}
 
 	bool isEmpty()
 	{
-		return (current == last);
+		return file.isEmpty();
 	}
 
-	~VectorData()
+	~StorageInData()
 	{
+		file.close();
+	}
+};
+
+template <typename T> class StorageOutData : public IDataOutSource <T>
+{
+private:
+	IFormatedFileStorage &file;
+public:
+	StorageOutData(IFormatedFileStorage &storage)
+	{
+		file = storage;
+	}
+
+	void putNext(const T &data)
+	{
+		file << data << ' ';
+	}
+
+	~StorageOutData()
+	{
+		file.close();
 	}
 };
