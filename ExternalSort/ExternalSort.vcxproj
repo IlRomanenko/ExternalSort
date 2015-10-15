@@ -65,6 +65,7 @@
     <ClInclude Include="base.h" />
     <ClInclude Include="DataSource.h" />
     <ClInclude Include="ExternalReverse.h" />
+    <ClInclude Include="ExternalSort.h" />
     <ClInclude Include="IExternalAlgorithm.h" />
     <ClInclude Include="FileStorage.h" />
     <ClInclude Include="IFileStorage.h" />
