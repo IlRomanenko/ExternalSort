@@ -7,6 +7,8 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
+#include <functional>
+#include <algorithm>
 
 typedef size_t uint;
 
