@@ -142,7 +142,7 @@ public:
 	template <typename T> static
 		void Serialize(IFormatedFileStorage &storage, const T data)
 	{
-		storage << data << ' ';
+        storage << data << ' ';
 	}
 
 	template <typename T> static

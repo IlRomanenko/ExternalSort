@@ -16,7 +16,7 @@ public:
 	T getNext()
 	{
 		T data;
-		(*file) >> data;
+        Serializer::Deserialize(*file, data);
 		return data;
 	}
 
@@ -43,7 +43,7 @@ public:
 
 	void putNext(const T &data)
 	{
-		(*file) << data << ' ';
+        Serializer::Serialize(*file, data);
 	}
 
 	~StorageOutData()
