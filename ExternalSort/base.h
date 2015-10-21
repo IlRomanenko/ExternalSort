@@ -10,13 +10,27 @@
 #include <functional>
 #include <algorithm>
 
+using namespace std;
 typedef size_t uint;
 
-using namespace std;
+#ifdef _DEBUG
+#define dbg(x) cerr << #x << " " << x << " " << __LINE__ << endl;
+#define debugCode(x); x
+#else
+#define dbg(x)
+#define debugCode(x); 
+#endif
 
 template <typename T> string toString(const T &obj)
 {
-	stringstream ss;
-	ss << obj;
-	return ss.str();
+    stringstream ss;
+    ss << obj;
+    return ss.str();
 }
+
+template <typename T> unique_ptr<T> make_unique(T *obj)
+{
+    return unique_ptr<T>(obj);
+}
+
+

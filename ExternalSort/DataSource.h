@@ -6,48 +6,48 @@
 template <typename T> class StorageInData : public IDataSource<T>
 {
 private:
-	unique_ptr<IFormatedFileStorage> file;
+    unique_ptr<IFormatedFileStorage> file;
 public:
-	StorageInData(IFormatedFileStorage *storage)
-	{
-		file = unique_ptr<IFormatedFileStorage>(storage);
-	}
-	
-	T getNext()
-	{
-		T data;
-		(*file) >> data;
-		return data;
-	}
+    StorageInData(unique_ptr<IFormatedFileStorage> storage)
+    {
+        file.swap(storage);
+    }
 
-	bool isEmpty()
-	{
-		return file->isEmpty();
-	}
+    T getNext()
+    {
+        T data;
+        (*file) >> data;
+        return data;
+    }
 
-	~StorageInData()
-	{
-		file->close();
-	}
+    bool isEmpty()
+    {
+        return file->isEmpty();
+    }
+
+    ~StorageInData()
+    {
+        debugCode(dbg("~StorageInData()"));
+    }
 };
 
 template <typename T> class StorageOutData : public IDataOutSource <T>
 {
 private:
-	unique_ptr<IFormatedFileStorage> file;
+    unique_ptr<IFormatedFileStorage> file;
 public:
-	StorageOutData(IFormatedFileStorage *storage)
-	{
-		file = unique_ptr<IFormatedFileStorage>(storage);
-	}
+    StorageOutData(unique_ptr<IFormatedFileStorage> storage)
+    {
+        file.swap(storage);
+    }
 
-	void putNext(const T &data)
-	{
-		(*file) << data << ' ';
-	}
+    void putNext(const T &data)
+    {
+        (*file) << data << ' ';
+    }
 
-	~StorageOutData()
-	{
-		file->close();
-	}
+    ~StorageOutData()
+    {
+        debugCode(dbg("~StorageOutData()"));
+    }
 };
