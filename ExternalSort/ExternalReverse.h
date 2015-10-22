@@ -31,7 +31,7 @@ private:
             chunksStack.pop();
         return true;
     }
-
+    
 public:
     ExternalReverse(shared_ptr<IDataSource<T> > _dataSource, shared_ptr<IDataOutSource<T> >_dataOutSource, 
         string _directoryName, uint _blockSize)

@@ -77,13 +77,10 @@ public:
         char chr;
         while(!file.eof())
         {
-            chr = file.get();
+            chr = file.peek();
             if (!isspace(chr))
-            {
-                if (chr != -1)
-                    file.putback(chr);
                 break;
-            }
+            file.get();
         }
         return file.eof();
     }
