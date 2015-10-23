@@ -192,6 +192,8 @@ void test_reverse()
 
 int main()
 {
+    //Let's do a magic! Don't touch :)
+    _setmaxstdio(2048);
 
     test();
 
