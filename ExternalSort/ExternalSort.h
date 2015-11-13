@@ -28,7 +28,7 @@ private:
 
     unique_ptr<pair_priority_queue> pr_queue;
 
-    void beforeWrite(T *& chunk, uint chunk_size)
+    void beforeWrite(T *chunk, uint chunk_size)
     {
         sort(chunk, chunk + chunk_size, comparator);
     }

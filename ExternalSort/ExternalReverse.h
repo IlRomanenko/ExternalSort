@@ -8,7 +8,7 @@ private:
     stack<uint> chunksStack;
     uint chunk_number;
 
-    void beforeWrite(T *& chunk, uint chunk_size)
+    void beforeWrite(T *chunk, uint chunk_size)
     {
         for (uint i = 0; i < chunk_size / 2; i++)
             swap(chunk[i], chunk[chunk_size - 1 - i]);

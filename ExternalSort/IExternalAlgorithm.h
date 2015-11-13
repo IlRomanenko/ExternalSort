@@ -12,7 +12,7 @@ private:
     string directoryName;
     vector<unique_ptr<IFileStorage> > storages;
     vector<uint> chunksSizes, chunksPos, totalWrited;
-    StorageType* chunk;
+    unique_ptr<StorageType[]> chunk;
     uint maxChunkBlock;
     uint blockSize;
 
@@ -20,7 +20,7 @@ private:
     unique_ptr<FileStorage> writeChunkToDisk(uint chunk_size)
     {
         unique_ptr<FileStorage> storage(new FileStorage(toString(storages.size())+".tmp", directoryName, IFile::file_mode::Write));
-        Serializer::SerializeRawData(*storage, chunk, chunk_size);
+        Serializer::SerializeRawData(*storage, chunk.get(), chunk_size);
         return storage;
     }
 
@@ -33,7 +33,7 @@ private:
 
     void readPartOfChunkFromDisk(uint file_number, uint offset, uint part_chunk_size)
     {
-        Serializer::DeserializeRawData(*storages[file_number], (chunk + offset), (int)part_chunk_size);
+        Serializer::DeserializeRawData(*storages[file_number], (chunk.get() + offset), (int)part_chunk_size);
         return;
     }
 
@@ -53,7 +53,7 @@ private:
             chunk[chunk_size++] = dataSource.get()->getNext();
             if (chunk_size >= blockSize)
             {
-                beforeWrite(chunk, chunk_size);
+                beforeWrite(chunk.get(), chunk_size);
                 storages.push_back(writeChunkToDisk(chunk_size));
                 addedChunk(chunk_size);
                 chunk_size = 0;
@@ -61,7 +61,7 @@ private:
         }
         if (chunk_size != 0)
         {
-            beforeWrite(chunk, chunk_size);
+            beforeWrite(chunk.get(), chunk_size);
             storages.push_back(writeChunkToDisk(chunk_size));
             addedChunk(chunk_size);
         }
@@ -93,7 +93,7 @@ private:
 protected:
 
     //Virtual functions
-    virtual void beforeWrite(StorageType *&chunk, uint chunk_size) = 0;
+    virtual void beforeWrite(StorageType *chunk, uint chunk_size) = 0;
     virtual bool chooseElement(StorageType &outData) = 0;
     virtual void prepareAlgorithm() = 0;
 
@@ -131,7 +131,7 @@ public:
     {
         dataSource = _dataSource;
         dataOutSource = _dataOutSource;
-        chunk = new StorageType[blockSize];
+        chunk = unique_ptr<StorageType[]>(new StorageType[blockSize]);
     }	
 
     void externalWork()
@@ -149,6 +149,5 @@ public:
         {
             storages[i]->remove();
         }
-        delete chunk;
     }
 };
