@@ -21,6 +21,8 @@ typedef size_t uint;
 #define debugCode(x); 
 #endif
 
+#define fori(i, n) for (int i = 0; i < (int)(n); i++)
+
 template <typename T> string toString(const T &obj)
 {
     stringstream ss;

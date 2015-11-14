@@ -6,10 +6,9 @@
 #include "ExternalSort.h"
 #include <functional>
 #include <ctime>
+#include <vld.h>
 
 
-
-#define fori(i, n) for(int i = 0; i < (int)(n); i++)
 template <typename T> void print(T x)
 {
     cout << "template <typename T> void print(T x)" << endl;
@@ -37,75 +36,78 @@ template <typename T, size_t N> void print(T (&x)[N])
     cout << endl;
 }
 
+void string_serialization(ostream &stream, const void * data) 
+{
+    string *str = (string*)data;
+    int len = str->length();
+    stream.write((char*)(&len), sizeof(size_t)); 
+    stream.write(str->c_str(), len);
+}
+
+void string_deserialization(istream &stream, void * data) 
+{
+    string *str = (string*)data;
+    size_t len = 0;
+    stream.read((char*)(&len), sizeof(size_t));
+    char* buf = new char[len];
+    stream.read(buf, len);
+    *str = string(buf, len);
+    delete buf;
+}
+
+
 void test()
 {
     {
+        Serializer serializer;
+        serializer.registerType<string>(string_serialization, string_deserialization);
+        
         FileStorage storage("binaryStorage.txt", "", IFile::Write);
         int arr[] = {9, 8, 5, 4, 12};
-        Serializer::Serialize(storage, arr);
+        fori(i, 5)
+            serializer.serialize(storage, arr[i]);
 
+        
         int *f = new int[8];
         fori(i, 8)
             f[i] = i * (-15);
-        Serializer::Serialize(storage, f, 8);
+        fori(i, 8)
+            serializer.serialize(storage, f[i]);
 
         double eps = 1e-9;
-        Serializer::Serialize(storage, eps);
+        serializer.serialize(storage, eps);
 
         string s = "abacaba";
-        Serializer::Serialize(storage, s);
+        serializer.serialize(storage, s);
+
+        delete f;
     }
     {
+        Serializer serializer;
+        serializer.registerType<string>(string_serialization, string_deserialization);
+
         FileStorage storage("binaryStorage.txt", "", IFile::Read);
 
         int arr[5];
-        Serializer::Deserialize(storage, arr);
+        fori(i, 5)
+            serializer.deserialize(storage, arr[i]);
         print(arr);
 
 
-        int *f = nullptr;
-        uint count = Serializer::Deserialize(storage, f);
-        print(f, count);
+        int *f = new int[8];
+        fori(i, 8)
+            serializer.deserialize(storage, f[i]);
+        print(f, 8);
 
         double eps;
-        Serializer::Deserialize(storage, eps);
+        serializer.deserialize(storage, eps);
         print(eps);
 
         string t;
-        Serializer::Deserialize(storage, t);
+        serializer.deserialize(storage, t);
         print(t);
-    }
-    {
-        FormatedFileStorage storage("FormatedFileStorage.txt", "", IFile::Write);
-        fori (i, 10)
-            Serializer::Serialize(storage, i);
 
-        vector<double> v;
-        fori(i, 7)
-            v.push_back(rand() + (rand() / (double)RAND_MAX));
-        Serializer::Serialize(storage, v);
-
-        string s = "abacaba";
-
-        Serializer::Serialize(storage, s);
-    }
-    {
-        print('\n');
-        FormatedFileStorage storage("FormatedFileStorage.txt", "", IFile::Read);
-        int f;
-        fori (i, 10)
-        {
-            Serializer::Deserialize(storage, f);
-            print(f);
-        }
-
-        vector<double> vt;
-        Serializer::Deserialize(storage, vt);
-        print(vt);
-
-        string st = "";
-        Serializer::Deserialize(storage, st);
-        print(st);
+        delete f;
     }
 }
 

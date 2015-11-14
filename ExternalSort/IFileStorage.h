@@ -35,6 +35,11 @@ public:
         std::remove(file_name.c_str());
     }
 
+    virtual fstream& stream()
+    {
+        return file;
+    }
+
     virtual ~IFile()
     {
         debugCode(dbg("virtual ~IFile()"));

@@ -3,202 +3,137 @@
 #include "FileStorage.h"
 #include <typeinfo>
 #include <typeindex>
+#include <type_traits>
+#include <map>
+
+struct Serialize_wrapper
+{
+    void (*serialize_function)(ostream &stream, const void* data);
+    void (*deserialize_function)(istream &stream, void* data);   
+
+    Serialize_wrapper()
+    {
+        serialize_function = nullptr;
+        deserialize_function = nullptr;
+    }
+
+    Serialize_wrapper(void(*ser)(ostream &, const void*), void(*des)(istream&, void*))
+    {
+        serialize_function = ser;
+        deserialize_function = des;
+    }
+
+    Serialize_wrapper(const Serialize_wrapper &wrapper)
+    {
+        serialize_function = wrapper.serialize_function;
+        deserialize_function = wrapper.deserialize_function;
+    }
+
+    ~Serialize_wrapper()
+    {
+        serialize_function = nullptr;
+        deserialize_function = nullptr;
+    }
+};
 
 class Serializer
 {
+    map<string, Serialize_wrapper> registered_types;
+
+    template <typename T> string getTypeName()
+    {
+        return string(typeid(T).name());
+    }
+
 public:
+    Serializer() { }
 
-    //BinarySerialization only for simple types such as int([], *, &), double, vector<simple type>, string etc.
-
-#pragma region BinarySerilization
-
-    static
-        void Serialize(IFileStorage &file, const string &str)
+    template <typename T> void registerType(void(*ser_func)(ostream&, const void*), void(*des_func)(istream &, void*))
     {
-        Serialize(file, str.c_str(), str.size());
+        if (ser_func == nullptr || des_func == nullptr)
+            throw exception("Incorrect serialization/deserialization functions");
+        Serialize_wrapper wrapper(ser_func, des_func);
+        registered_types.insert(make_pair(getTypeName<T>(), wrapper));
     }
 
-    template <typename T> static 
-        void Serialize(IFileStorage &file, const vector<T> &v)
+    template <typename T> void unregisterType()
     {
-        uint size = v.size();
-        uint element_size = sizeof(T);
-        file.write(&size, sizeof(uint));
-        for (uint i = 0; i < size; i++)
-            file.write(&v[i], element_size);
+        registered_types.erase(registered_types.find(getTypeName()));
     }
 
-    template <typename T, size_t N> static
-        void Serialize(IFileStorage &file, const T (&data)[N])
+    template <typename T> void serialize(IFileStorage &file, const T &data)
     {
-        Serialize(file, data, N);
-    }
-
-    template <typename T> static
-        void SerializeRawData(IFileStorage &file, const T *data, int count)
-    {
-        uint element_size = sizeof(T);
-        file.write(data, count * element_size);
-    }
-
-    template <typename T> static
-        void SerializeRawData(IFileStorage &file, const T data)
-    {
-        uint element_size = sizeof(T);
-        file.write(&data, element_size);
-    }
-
-    template <typename T> static
-        void Serialize(IFileStorage &file, const T *data, int count)
-    {
-        uint element_size = sizeof(T);
-        uint size = count;
-        file.write(&size, sizeof(uint));
-        file.write(data, size * element_size);
-    }
-
-    template <typename T> static
-        void Serialize(IFileStorage &file, const T data)
-    {
-        uint size = sizeof(T);
-        file.write(&data, size);
-    }
-
-    static
-        void Deserialize(IFileStorage &file, string &str)
-    {
-        char *ptr = nullptr;
-        uint size = Deserialize(file, ptr);
-        str = string(ptr, size);
-        delete ptr;
-    }
-
-    template <typename T> static
-        void Deserialize(IFileStorage &file, vector<T> &v)
-    {
-        uint size = 0;
-        uint element_size = sizeof(T);
-        file.read(&size, sizeof(uint));
-        for (uint i = 0; i < size; i++)
-            file.read(&v[i], element_size);
-    }
-
-    template <typename T> static
-        uint Deserialize(IFileStorage &file, T *&data)
-    {
-        uint element_size = sizeof(T);
-        uint size = 0;
-        file.read(&size, sizeof(uint));
-        if (data == nullptr)
-            data = new T[size];
-        file.read(data, element_size * size);
-        return size;
-    }
-
-    template <typename T> static
-        void DeserializeRawData(IFileStorage &file, T *data, int count)
-    {
-        uint element_size = sizeof(T);
-        file.read(data, count * element_size);
-    }
-
-
-    template <typename T, size_t N> static
-        uint Deserialize(IFileStorage &file, T (&data)[N])
-    {
-        T* ptr = nullptr;
-        uint count = Deserialize(file, ptr);
-        if (count > N)
+        if (registered_types.find(getTypeName<T>()) != registered_types.end())
+            registered_types[getTypeName<T>()].serialize_function(file.stream(), (void*)&data);
+        else
         {
-            delete ptr;
-            throw exception();
-        }
-        memcpy(data, ptr, count * sizeof(T));
-        delete ptr;
-        return count;
-    }
-
-    template <typename T> static
-        void DeserializeRawData(IFileStorage &file, T &data)
-    {
-        uint element_size = sizeof(T);
-        file.read(&data, element_size);
-    }
-
-    template <typename T> static
-        void Deserialize(IFileStorage &file, T &data)
-    {
-        DeserializeRawData(file, data);
-    }
-
-#pragma endregion
-
-
-
-    //FormatedSerialization for custom types
-
-#pragma region FormatedSerilization
-
-    template <typename T> static
-        void Serialize(IFormatedFileStorage &storage, const T data)
-    {
-        storage << data << ' ';
-    }
-
-    template <typename T> static
-        void Serialize(IFormatedFileStorage &storage, const T *data)
-    {
-        storage << *data << ' ';
-    }
-
-    static
-        void Serialize(IFormatedFileStorage &storage, const string &str)
-    {
-        storage << str.size() << ' ' << str << ' ';
-    }
-
-    template <typename T> static
-        void Serialize(IFormatedFileStorage &storage, const vector<T> &vect)
-    {
-        storage << vect.size() << ' ';
-        for (T value : vect)
-            storage << value << ' ';
-    }
-
-    template <typename T> static
-        void Deserialize(IFormatedFileStorage &storage, T &data)
-    {
-        storage >> data;
-    }
-
-    template <typename T> static
-        void Deserialize(IFormatedFileStorage &storage, T *&data)
-    {
-        if (data == nullptr)
-            data = new T;
-        storage >> *data;
-    }
-
-    template <> static
-        void Deserialize(IFormatedFileStorage &storage, string &str)
-    {
-        uint size = 0;
-        storage >> size;
-        str.resize(size, '~');
-        for (uint i = 0; i < size; i++)
-        {
-            storage >> str[i];
+            file.write(&data, sizeof(T));
         }
     }
 
-    template <typename T> static
-        void Deserialize(IFormatedFileStorage &storage, vector<T> &vect)
+    template <typename T> void serialize(IFileStorage &file, const T *data)
     {
-        uint size = 0;
-        storage >> size;
-        vect.resize(size, T());
-        for (uint i = 0; i < size; i++)
-            storage >> vect[i];
+        if (registered_types.find(getTypeName<T*>()) != registered_types.end())
+            registered_types[getTypeName<T*>()].serialize_function(file.stream(), (void*)data);
+        else
+        {
+            file.write(data, sizeof(T));
+        }
     }
-#pragma endregion
+
+    template <typename T> void deserialize(IFileStorage &file, T *data)
+    {
+        if (registered_types.find(getTypeName<T*>()) != registered_types.end())
+            registered_types[getTypeName<T*>()].deserialize_function(file.stream(), (void*)data);
+        else
+            file.read(data, sizeof(T));
+    }
+
+    template <typename T> void deserialize(IFileStorage &file, T &data)
+    {
+        if (registered_types.find(getTypeName<T>()) != registered_types.end())
+            registered_types[getTypeName<T>()].deserialize_function(file.stream(), (void*)&data);
+        else
+            file.read(&data, sizeof(T));
+    }
+
+    template <typename T> void serialize(IFileStorage &file, const vector<T> &data)
+    {
+        if (registered_types.find(getTypeName<const vector<T> >()) != registered_types.end())
+        {
+            registered_types[getTypeName<const vector<T> >()].serialize_function(file.stream(), (void*)&data);
+        }
+        else
+        {
+            size_t len = data.size();
+            file.write(&len, sizeof(size_t));
+            for (T elem : data)
+            {
+                serialize(file, elem);
+            }
+        }
+    }
+
+    template <typename T> void deserialize(IFileStorage &file, vector<T> &data)
+    {
+        if (registered_types.find(getTypeName<const vector<T> >()) != registered_types.end())
+        {
+             registered_types[getTypeName<vector<T> >()].deserialize_function(file.stream(), (void*)&data);
+        }
+        else
+        {
+            size_t len = 0;
+            file.read(&len, sizeof(size_t));
+            data.resize(len, T());
+            for (size_t i = 0; i < len; i++)
+            {
+                deserialize(file, data[i]); 
+            }
+        }
+    }
+
+    ~Serializer() 
+    {
+        registered_types.clear();
+    }
 };

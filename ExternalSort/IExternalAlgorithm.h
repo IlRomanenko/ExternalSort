@@ -15,12 +15,14 @@ private:
     unique_ptr<StorageType[]> chunk;
     uint maxChunkBlock;
     uint blockSize;
+    Serializer serializer;
 
     //Base private functions
-    unique_ptr<FileStorage> writeChunkToDisk(uint chunk_size)
+    unique_ptr<TempFileStorage> writeChunkToDisk(uint chunk_size)
     {
-        unique_ptr<FileStorage> storage(new FileStorage(toString(storages.size())+".tmp", directoryName, IFile::file_mode::Write));
-        Serializer::SerializeRawData(*storage, chunk.get(), chunk_size);
+        unique_ptr<TempFileStorage> storage(new TempFileStorage(toString(storages.size())+".tmp", directoryName, IFile::Write));
+        for (size_t i = 0; i < chunk_size; i++)
+            serializer.serialize(*storage, chunk.get()[i]);
         return storage;
     }
 
@@ -33,7 +35,8 @@ private:
 
     void readPartOfChunkFromDisk(uint file_number, uint offset, uint part_chunk_size)
     {
-        Serializer::DeserializeRawData(*storages[file_number], (chunk.get() + offset), (int)part_chunk_size);
+        for (size_t i = 0; i < part_chunk_size; i++)
+            serializer.deserialize(*storages[file_number], chunk.get()[offset + i]);
         return;
     }
 
@@ -144,10 +147,5 @@ public:
     ~IExternalAlgorithm() 
     {
         debugCode(dbg("~IExternalAlgorithm()"));
-
-        for (uint i = 0; i < storages.size(); i++)
-        {
-            storages[i]->remove();
-        }
     }
 };

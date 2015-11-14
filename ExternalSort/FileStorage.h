@@ -32,6 +32,17 @@ public:
     }
 };
 
+class TempFileStorage : public FileStorage
+{
+public:
+    TempFileStorage(string name, string directory, file_mode mode) : FileStorage(name, directory, mode) { }
+    ~TempFileStorage()
+    {
+        close();
+        remove();
+    }
+};
+
 class FormatedFileStorage : public IFormatedFileStorage
 {
 public:
