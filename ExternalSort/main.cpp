@@ -36,22 +36,20 @@ template <typename T, size_t N> void print(T (&x)[N])
     cout << endl;
 }
 
-void string_serialization(ostream &stream, const void * data) 
+void string_serialization(ostream &stream, const string data) 
 {
-    string *str = (string*)data;
-    int len = str->length();
+    int len = data.length();
     stream.write((char*)(&len), sizeof(size_t)); 
-    stream.write(str->c_str(), len);
+    stream.write(data.c_str(), len);
 }
 
-void string_deserialization(istream &stream, void * data) 
+void string_deserialization(istream &stream, string &data) 
 {
-    string *str = (string*)data;
     size_t len = 0;
     stream.read((char*)(&len), sizeof(size_t));
     char* buf = new char[len];
     stream.read(buf, len);
-    *str = string(buf, len);
+    data = string(buf, len);
     delete buf;
 }
 
